@@ -1,0 +1,65 @@
+#include <WiFi.h>
+
+const char* ssid = "ESP32";
+const char* senha = "12345678";
+
+int x = 0;
+int y = 0;
+int cor[3] = {255, 255, 255};
+WiFiServer server(5000);
+
+void setup() {
+  Serial.begin(115200);
+  WiFi.mode(WIFI_AP);
+  WiFi.softAP(ssid, senha);
+  server.begin();
+  analogReadResolution(12);
+  analogSetPinAttenuation(34, ADC_11db);
+  analogSetPinAttenuation(35, ADC_11db); 
+  analogSetPinAttenuation(32, ADC_11db);
+  analogSetPinAttenuation(33, ADC_11db); 
+  pinMode(32, INPUT_PULLUP);
+  pinMode(33, INPUT_PULLUP);
+
+  Serial.print("IP AP: ");
+  Serial.println(WiFi.softAPIP());
+}
+
+void loop() {
+  WiFiClient client = server.available();
+
+  if (client) {
+    Serial.println("Cliente conectado!");
+
+    while (client.connected()){ 
+      if(analogRead(34) > 2600){
+        y += 1; 
+      }
+      if(analogRead(34) < 1000){ 
+        y -= 1; 
+      }
+      if(analogRead(35) > 2600){ 
+        x -= 1; 
+      } 
+      if(analogRead(35) < 1000){
+        x += 1; 
+      } 
+      if(digitalRead(32) == 1){
+        cor[0] = 0;
+        cor[1] = 255;
+        cor[2] = 0;
+        client.println("gerar_tom(740, 0.5, 10)");
+      }
+      if(digitalRead(33) == 1){
+        cor[0] = 255;
+        cor[1] = 0;
+        cor[2] = 0;
+        client.println("gerar_tom(440, 0.5, 10)");
+      }
+      client.println("pygame.draw.circle(tela, (" + String(cor[0]) + ", " + String(cor[1]) + ", " + String(cor[2]) + "), (" + String(x) + ", " + String(y) + "), 50)");
+      delay(5); 
+    }
+    client.stop();
+    Serial.println("Cliente desconectado");
+  }
+}
